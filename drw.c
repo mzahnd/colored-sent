@@ -234,6 +234,30 @@ drw_rect(Drw *drw, int x, int y, unsigned int w, unsigned int h, int filled, int
 		XDrawRectangle(drw->dpy, drw->drawable, drw->gc, x, y, w - 1, h - 1);
 }
 
+/* Normal drw_text + add color to lines */
+int 
+drw_text_colored(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lpad, const char *text, int invert, const char * color_front, const char * color_bg)
+{
+    int drw_text_ans = 0;
+    Clr * colored_sc = NULL;
+    Clr * original_sc = drw->scheme;
+
+    const char * new_colors[] = {color_front, color_bg};
+
+    colored_sc = drw_scm_create(drw, new_colors, 2);
+    if (colored_sc == NULL) return 0;
+
+    drw->scheme = colored_sc;
+
+    drw_text_ans = drw_text(drw, x, y, w, h, lpad, text, invert);
+
+    drw->scheme = original_sc;
+
+    free(colored_sc);
+
+    return drw_text_ans;
+}
+
 int
 drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lpad, const char *text, int invert)
 {

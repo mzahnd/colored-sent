@@ -29,6 +29,7 @@ char *argv0;
 #define LEN(a)         (sizeof(a) / sizeof(a)[0])
 #define LIMIT(x, a, b) (x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
 #define MAXFONTSTRLEN  128
+#define HEXNUM(c)      (((c) >= '0' && (c) <= '9') || ((c) >= 'A' && (c) <= 'F') || ((c) >= 'a' && (c) <='f'))
 
 typedef enum {
 	NONE = 0,
@@ -318,6 +319,31 @@ ffdraw(Image *img)
 	XFlush(xw.dpy);
 }
 
+int
+is_colored(const char * text, const char ** color, const char ** new_text)
+{
+    if (text == NULL || color == NULL || new_text == NULL)
+        return -1;
+
+    int i = 2;
+    if (*text == 'c' && text+1 != NULL && *(text+1)=='#') {
+        while(i < 8) {
+            if ((text+i) == NULL || !HEXNUM(*(text+i)))
+                return 0;
+
+            i++;
+        }
+
+        *color = text+1;
+        *new_text = *(text+8) == ' ' ? text+9 : text+8;
+
+        return 1;
+    }
+
+    return 0;
+
+}
+
 void
 getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 {
@@ -335,11 +361,26 @@ getfontsize(Slide *s, unsigned int *width, unsigned int *height)
 	/* fit width */
 	*width = 0;
 	for (i = 0; i < s->linecount; i++) {
-		curw = drw_fontset_getwidth(d, s->lines[i]);
+		const char * ct = NULL;
+		const char * txt = NULL;
+		is_colored(s->lines[i], &ct, &txt);
+
+		/* Text has special color */
+		if (txt) {
+			curw = drw_fontset_getwidth(d, txt);
+		} else {
+			curw = drw_fontset_getwidth(d, s->lines[i]);
+		}
+		
 		newmax = (curw >= *width);
 		while (j > 0 && curw > xw.uw) {
 			drw_setfontset(d, fonts[--j]);
-			curw = drw_fontset_getwidth(d, s->lines[i]);
+			/* Text has special color */
+			if (txt) {
+				curw = drw_fontset_getwidth(d, txt);
+			} else {
+				curw = drw_fontset_getwidth(d, s->lines[i]);
+			}
 		}
 		if (newmax)
 			*width = curw;
@@ -528,15 +569,39 @@ xdraw()
 
 	if (!im) {
 		drw_rect(d, 0, 0, xw.w, xw.h, 1, 1);
-		for (i = 0; i < slides[idx].linecount; i++)
-			drw_text(d,
-			         (xw.w - width) / 2,
-			         (xw.h - height) / 2 + i * linespacing * d->fonts->h,
-			         width,
-			         d->fonts->h,
-			         0,
-			         slides[idx].lines[i],
-			         0);
+		for (i = 0; i < slides[idx].linecount; i++) {
+			const char * colortxt = NULL;
+			const char * txtwcolor = NULL;
+
+			if (is_colored(slides[idx].lines[i], &colortxt, &txtwcolor)) {
+				/* Remove rest of txt from colortxt */
+				char txt_color[8] = {0};
+				for (int k=0; k < 7; k++)
+					txt_color[k] = *(colortxt+k);
+
+				drw_text_colored(d,
+					(xw.w - width) / 2,
+					(xw.h - height) / 2 + i * linespacing * d->fonts->h,
+					width,
+					d->fonts->h,
+					0,
+					txtwcolor,
+					0,
+					(const char*)txt_color, /* New text color */
+					colors[ColBg] /* Original background */
+					);
+			} else {
+				/* Normal text */
+				drw_text(d,
+					(xw.w - width) / 2,
+					(xw.h - height) / 2 + i * linespacing * d->fonts->h,
+					width,
+					d->fonts->h,
+					0,
+					slides[idx].lines[i],
+					0);
+			}
+                }
 		drw_map(d, xw.win, 0, 0, xw.w, xw.h);
 	} else {
 		if (!(im->state & SCALED))
