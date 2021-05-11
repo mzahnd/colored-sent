@@ -50,6 +50,18 @@ with `#` will be ignored. A `\` at the beginning of the line escapes `@` and
 	
 	thanks / questions?
 
+Colors
+Line color support has been added with the special combination "c#".
+Each text line supports only one color: the default or the special one (you cannot have text with two different colors in the same line).
+The special color must be entered at the beggining of the line.
+Example slide:
+```
+sent
+c#00ff00 with 
+c#0000FFcolors
+```
+Will print "sent" in the default foreground color (defined in `config.h`), "with" in green and "colors" in blue.
+Note that the word "colors" has no space between the hex color and itself. This is because a single space after the color is optional and ommited when printing. Using multiple spaces (like `c#0000FF    colors`) will ignore the first one after the last F and print the rest.
 
 Development
 
