@@ -23,6 +23,7 @@ easy to use
 depends on
 ♽ Xlib
 ☢ Xft
+🖻 cairo
 ☃ farbfeld
 
 ~1000 lines of code
