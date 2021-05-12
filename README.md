@@ -1,4 +1,4 @@
-# sent
+# colored-sent
 sent is a simple plaintext presentation tool.
 
 sent does not need latex, libreoffice or any other fancy file format, it uses
